@@ -1,114 +1,138 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const encounterMessage = document.getElementById('encounterMessage');
+const catchButton = document.getElementById('catchButton');
+const inventoryDisplay = document.getElementById('inventory');
 
-// Game settings
-const gridSize = 20; // Size of each grid square
-const tileCount = canvas.width / gridSize; // Number of tiles in a row/column
+// Player properties
+const player = {
+  x: canvas.width / 2,
+  y: canvas.height / 2,
+  size: 20,
+  speed: 5,
+  color: 'blue'
+};
 
-// Snake and food
-let snake = [{ x: 10, y: 10 }]; // Initial snake position
-let food = { x: 5, y: 5 }; // Initial food position
-let direction = { x: 0, y: 0 }; // Snake direction
-let score = 0;
+// Possible encounters (now with emojis)
+const encounters = [
+  { name: 'Cat', emoji: '🐱' },
+  { name: 'Dog', emoji: '🐶' },
+  { name: 'Tree', emoji: '🌲' },
+  { name: 'Rock', emoji: '🪨' },
+  { name: 'Mysterious Object', emoji: '❓' }
+];
+
+// Game state
+let isEncounter = false;
+let currentEncounter = null;
+let collectedItems = {}; // Tracks how many of each item the player has
+let objectsOnMap = [];  // Stores encountered objects (emoji + position)
+
+// Initialize inventory (start with 0 of everything)
+encounters.forEach(item => {
+  collectedItems[item.name] = 0;
+});
+
+// Draw player
+function drawPlayer() {
+  ctx.fillStyle = player.color;
+  ctx.fillRect(player.x, player.y, player.size, player.size);
+}
+
+// Draw objects on the map (emojis)
+function drawObjects() {
+  objectsOnMap.forEach(obj => {
+    ctx.font = '24px Arial';
+    ctx.fillText(obj.emoji, obj.x, obj.y);
+  });
+}
+
+// Update inventory display
+function updateInventory() {
+  let inventoryText = 'Inventory: ';
+  for (const item in collectedItems) {
+    const emoji = encounters.find(e => e.name === item).emoji;
+    inventoryText += `${emoji}×${collectedItems[item]} `;
+  }
+  inventoryDisplay.textContent = inventoryText;
+}
+
+// Clear canvas
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// Handle player movement
+function movePlayer(e) {
+  if (isEncounter) return; // Stop movement during encounters
+
+  switch (e.key) {
+    case 'ArrowUp': player.y -= player.speed; break;
+    case 'ArrowDown': player.y += player.speed; break;
+    case 'ArrowLeft': player.x -= player.speed; break;
+    case 'ArrowRight': player.x += player.speed; break;
+  }
+
+  // Keep player within canvas bounds
+  player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
+  player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
+
+  // Random encounter check (5% chance per move)
+  if (Math.random() < 0.05) {
+    startEncounter();
+  }
+}
+
+// Start a random encounter
+function startEncounter() {
+  isEncounter = true;
+  currentEncounter = encounters[Math.floor(Math.random() * encounters.length)];
+  encounterMessage.textContent = `You encountered a wild ${currentEncounter.name}!`;
+  encounterMessage.classList.remove('hidden');
+  catchButton.classList.remove('hidden');
+}
+
+// Catch the encountered thing
+catchButton.addEventListener('click', () => {
+  // Add the item to the map (at player's position)
+  objectsOnMap.push({
+    emoji: currentEncounter.emoji,
+    x: player.x,
+    y: player.y
+  });
+
+  // Update inventory
+  collectedItems[currentEncounter.name]++;
+  updateInventory();
+
+  // Check if the player has collected enough of this item
+  if (collectedItems[currentEncounter.name] === 3) {
+    alert(`🎉 Congrats! You collected 3 ${currentEncounter.name}s!`);
+  }
+
+  endEncounter();
+});
+
+// End the encounter
+function endEncounter() {
+  isEncounter = false;
+  encounterMessage.classList.add('hidden');
+  catchButton.classList.add('hidden');
+}
 
 // Game loop
 function gameLoop() {
-  update();
-  draw();
-  setTimeout(gameLoop, 100); // Adjust speed here
+  clearCanvas();
+  drawObjects(); // Draw objects first (under player)
+  drawPlayer();
+  requestAnimationFrame(gameLoop);
 }
 
-// Update game state
-function update() {
-  // Move snake
-  const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+// Initialize inventory display
+updateInventory();
 
-  // Wrap around the screen
-  if (head.x < 0) head.x = tileCount - 1;
-  if (head.x >= tileCount) head.x = 0;
-  if (head.y < 0) head.y = tileCount - 1;
-  if (head.y >= tileCount) head.y = 0;
-
-  // Check for collision with itself
-  if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-    resetGame();
-    return;
-  }
-
-  // Add new head to snake
-  snake.unshift(head);
-
-  // Check if snake eats food
-  if (head.x === food.x && head.y === food.y) {
-    score++;
-    placeFood();
-  } else {
-    // Remove tail if no food eaten
-    snake.pop();
-  }
-}
-
-// Draw game elements
-function draw() {
-  // Clear canvas
-  ctx.fillStyle = "black";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Draw snake
-  ctx.fillStyle = "lime";
-  snake.forEach(segment => {
-    ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
-  });
-
-  // Draw food
-  ctx.fillStyle = "red";
-  ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
-
-  // Draw score
-  ctx.fillStyle = "white";
-  ctx.font = "20px Arial";
-  ctx.fillText(`Score: ${score}`, 10, 30);
-}
-
-// Place food randomly
-function placeFood() {
-  food = {
-    x: Math.floor(Math.random() * tileCount),
-    y: Math.floor(Math.random() * tileCount)
-  };
-
-  // Ensure food doesn't spawn on the snake
-  if (snake.some(segment => segment.x === food.x && segment.y === food.y)) {
-    placeFood();
-  }
-}
-
-// Reset game
-function resetGame() {
-  snake = [{ x: 10, y: 10 }];
-  direction = { x: 0, y: 0 };
-  score = 0;
-  placeFood();
-}
-
-// Handle keyboard input
-window.addEventListener("keydown", e => {
-  switch (e.key) {
-    case "ArrowUp":
-      if (direction.y === 0) direction = { x: 0, y: -1 };
-      break;
-    case "ArrowDown":
-      if (direction.y === 0) direction = { x: 0, y: 1 };
-      break;
-    case "ArrowLeft":
-      if (direction.x === 0) direction = { x: -1, y: 0 };
-      break;
-    case "ArrowRight":
-      if (direction.x === 0) direction = { x: 1, y: 0 };
-      break;
-  }
-});
+// Event listeners
+window.addEventListener('keydown', movePlayer);
 
 // Start the game
-placeFood();
 gameLoop();

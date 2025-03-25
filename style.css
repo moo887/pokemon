@@ -1,19 +1,41 @@
 body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-  }
-  
-  h1 {
-    margin-bottom: 20px;
-  }
-  
-  canvas {
-    border: 2px solid #333;
-    background-color: #000;
-  }
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f0f0f0;
+  font-family: Arial, sans-serif;
+}
+
+.game-container {
+  position: relative;
+  text-align: center;
+}
+
+#gameCanvas {
+  border: 2px solid #000;
+  background-color: #90ee90; /* Light green background for the map */
+}
+
+#inventory {
+  margin-top: 10px;
+  font-size: 20px;
+}
+
+#encounterMessage {
+  margin-top: 10px;
+  font-size: 20px;
+  color: #333;
+}
+
+#catchButton {
+  margin-top: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.hidden {
+  display: none;
+}
